@@ -1,0 +1,2 @@
+# Dependências do projeto
+panda3d>=1.10.13
