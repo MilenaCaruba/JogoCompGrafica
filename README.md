@@ -8,30 +8,39 @@ Jogo 3D de coleta em primeira pessoa desenvolvido com **Python + Panda3D**.
 
 ```
 trabalho_compgrafica/
-├── main.py           # Ponto de entrada — classe Game (loop principal)
-├── player.py         # Controlador do jogador (câmera FPS + colisão)
-├── collectibles.py   # Sistema de objetos coletáveis (geometria + animação)
-├── scene.py          # Cenário 3D (chão, paredes, decorações, céu)
-├── hud.py            # Interface HUD (pontos, timer, tela de vitória)
-├── requirements.txt  # Dependência: panda3d
-└── README.md         # Este arquivo
+├── main.py           # Ponto de entrada — máquina de estados Menu / Jogo
+├── menu.py           # Tela de menu principal com botões e resultado anterior
+├── player.py         # Controlador FPS (câmera, WASD, mouse center-warp)
+├── collectibles.py   # Geometria procedural, animação e sistema de coleta
+├── scene.py          # Cenário 3D (laje, paredes, árvores, plataformas, skybox)
+├── hud.py            # HUD (pontos, timer, tela de vitória com botões)
+├── requirements.txt  # Dependência: panda3d>=1.10.13
+├── .gitignore
+└── README.md
 ```
 
 ---
 
 ## Dependências
 
-| Pacote   | Versão mínima | Uso                          |
-|----------|---------------|------------------------------|
-| panda3d  | 1.10.13       | Engine 3D completa (render, input, colisão, GUI) |
+| Pacote  | Versão mínima | Uso |
+|---------|---------------|-----|
+| panda3d | 1.10.13 | Engine 3D (render, input, colisão, GUI, áudio) |
 
 Python recomendado: **3.9 – 3.11**
 
 ---
 
-## Instalação passo a passo
+## Instalação e execução
 
-### 1. Criar e ativar ambiente virtual (opcional, mas recomendado)
+### 1. Clonar o repositório
+
+```bash
+git clone https://github.com/inoa-rfschuinki/JogoCompGrafica.git
+cd JogoCompGrafica
+```
+
+### 2. (Opcional) Criar ambiente virtual
 
 ```bash
 # Windows
@@ -43,13 +52,13 @@ python3 -m venv venv
 source venv/bin/activate
 ```
 
-### 2. Instalar dependências
+### 3. Instalar dependências
 
 ```bash
 pip install -r requirements.txt
 ```
 
-### 3. Executar o jogo
+### 4. Executar
 
 ```bash
 python main.py
@@ -57,58 +66,85 @@ python main.py
 
 ---
 
+## Fluxo do jogo
+
+```
+┌─────────────┐   Jogar    ┌─────────────┐   Todos coletados   ┌──────────────┐
+│  Menu       │ ─────────► │  Partida    │ ──────────────────► │  Vitória     │
+│  Principal  │            │  em curso   │                     │  (painel)    │
+└─────────────┘            └─────────────┘                     └──────┬───────┘
+       ▲                          │ ESC                               │
+       └──────────────────────────┘        Menu Principal ◄───────────┘
+                                                    ou
+                                           Jogar Novamente ──► (nova partida)
+```
+
+---
+
 ## Controles
 
-| Tecla / Dispositivo | Ação                        |
-|---------------------|-----------------------------|
-| **W**               | Mover para frente           |
-| **S**               | Mover para trás             |
-| **A**               | Girar à esquerda            |
-| **D**               | Girar à direita             |
-| **Mouse**           | Controlar câmera (pitch/yaw) |
-| **ESC**             | Sair do jogo                |
+| Tecla / Dispositivo | Ação |
+|---------------------|------|
+| **W** | Mover para frente |
+| **S** | Mover para trás |
+| **A** | Girar à esquerda |
+| **D** | Girar à direita |
+| **Mouse** | Controlar câmera (yaw + pitch) |
+| **ESC** (durante o jogo) | Voltar ao menu principal |
+| **ESC** (no menu) | Fechar o jogo |
 
 ---
 
 ## Objetivo
 
-Colete todos os **15 objetos** espalhados pelo mapa.  
-Ao coletar o último item, uma tela de vitória exibe sua pontuação e tempo.
+Colete todos os **15 objetos** espalhados pelo mapa no menor tempo possível.  
+Ao coletar o último item a tela de vitória exibe pontuação, tempo e dois botões:
+- **Jogar Novamente** — inicia uma nova partida imediatamente
+- **Menu Principal** — volta ao menu (exibe resultado da última partida)
 
 ---
 
 ## Conceitos de Computação Gráfica demonstrados
 
-| Conceito                        | Onde é aplicado                                  |
-|---------------------------------|--------------------------------------------------|
-| Geometria procedural            | `collectibles.py`, `scene.py` (esfera UV, cubo, plano com grid) |
-| Normais de superfície           | Calculadas manualmente para iluminação Phong     |
-| Material Phong (difuso + especular + ambiente) | Todos os objetos via `panda3d.core.Material` |
-| Iluminação (ambiente + direcional + contraluz) | `main.py` — `_setup_lighting()`      |
-| Grafo de cena hierárquico       | NodePath pai/filho (pivot → câmera, root → geom) |
-| Transformações (T, R, S)        | `player.py` (translação/rotação), animação de coletáveis |
-| Animação por interpolação       | Bob senoidal (`sin`) e rotação contínua nos coletáveis |
-| Colisão esférica                | `CollisionSphere` + `CollisionTraverser` + `CollisionHandlerEvent` |
-| Câmera de primeira pessoa       | Separação heading/pitch via nó pivot             |
-| HUD / Texto 2D sobreposto       | `OnscreenText`, `DirectFrame` em coordenadas normalizadas |
-| Skybox                          | Cubo grande com `setLightOff()` para cor constante |
-| Anti-aliasing                   | `render.setAntialias(AntialiasAttrib.MAuto)`     |
+| Conceito | Onde é aplicado |
+|----------|-----------------|
+| **Geometria procedural** | `collectibles.py` (esfera UV subdividida, cubo com normais por face) e `scene.py` (laje, caixas, árvores) |
+| **Normais de superfície** | Calculadas manualmente em todas as primitivas para iluminação correta |
+| **Material Phong** (difuso + especular + ambiente) | Todos os objetos via `panda3d.core.Material` |
+| **Iluminação** (ambiente + direcional "sol" + contraluz) | `main.py → _setup_lighting()` com 3 luzes |
+| **Grafo de cena hierárquico** | NodePath pai/filho: `render → scene_root`, `pivot → camera`, `root → geom + col_np` |
+| **Transformações T/R por frame** | `player.py` (translação + heading/pitch), coletáveis (rotação + bob) |
+| **Animação senoidal (bob)** | `collectibles.py` — oscilação vertical via `sin(elapsed * speed + phase)` |
+| **Colisão esférica** | `CollisionSphere` + `CollisionTraverser` + `CollisionHandlerEvent` + tags `cid` |
+| **Câmera FPS (center-warp)** | `player.py` — separação heading (pivot Z) / pitch (câmera X), warp ao centro |
+| **Lente perspectiva** | `camLens.setFov(75)`, `setNear(0.1)`, `setFar(1000)` |
+| **Skybox** | Cubo invertido 400u com `setLightOff()` + `setColor()` + bin "background" |
+| **HUD 2D sobreposto** | `OnscreenText`, `DirectFrame`, `DirectButton` em coordenadas normalizadas |
+| **Máquina de estados** | `main.py` — estados MENU / JOGO com criação e destruição limpa de subsistemas |
+| **Anti-aliasing** | `render.setAntialias(AntialiasAttrib.MAuto)` |
 
 ---
 
 ## Descrição técnica dos arquivos
 
 ### `main.py`
-Classe `Game` (herda `ShowBase`). Inicializa todos os subsistemas, configura iluminação, registra eventos de colisão e executa o task `_update` a cada frame.
+Classe `Game` (herda `ShowBase`). Implementa uma **máquina de estados** com dois modos:
+- **Menu**: menu visível, cena 3D inexistente, mouse livre
+- **Jogo**: cena construída, HUD ativo, mouse capturado  
+
+Gerencia o ciclo completo de vida dos subsistemas (`_start_game` / `_cleanup_game` / `_go_to_menu`).
+
+### `menu.py`
+Classe `Menu`. Painel de tela cheia com título, instruções e botões **Jogar** / **Sair**. Exibe o resultado da última partida ao retornar do jogo.
 
 ### `player.py`
-Classe `Player`. Usa um nó *pivot* para separar a rotação horizontal (heading, eixo Z) da inclinação vertical da câmera (pitch, eixo X). Lê entradas de teclado e mouse a cada frame, calculando deslocamento no plano XY e limitando o jogador ao mapa.
+Classe `Player`. Usa um nó **pivot** para desacoplar rotação horizontal (heading, eixo Z) da inclinação vertical da câmera (pitch, eixo X). O controle de mouse usa **center-warp**: lê o delta em relação ao centro da janela e reposiciona o cursor a cada frame. Limite de pitch ±80°. Velocidade de movimento: 10 u/s; rotação por teclado: 90°/s.
 
 ### `collectibles.py`
-Funções `_make_sphere_geom` e `_make_cube_geom` constroem geometria via `GeomVertexData` + `GeomTriangles`. A classe `Collectible` anima cada item (rotação + bob senoidal). `CollectibleManager` instancia todos os itens e detecta coletas via nome do nó de colisão.
+Funções `_make_sphere_geom` (esfera UV, 12×16 subdivisões) e `_make_cube_geom` (cubo com normais por face) constroem geometria via `GeomVertexData` + `GeomTriangles`. Cada `Collectible` recebe uma **tag `cid`** no nó de colisão para identificação inequívoca no evento. `CollectibleManager` gerencia 15 itens em posições fixas.
 
 ### `scene.py`
-Função `_make_plane` gera chão com subdivisions para iluminação suave. `_make_box` cria caixas com normais por face. A classe `Scene` monta chão, paredes, árvores (tronco + copa), plataformas e skybox.
+`_make_box` gera caixas com normais por face. A classe `Scene` constrói: **laje de chão** sólida (evita ver o vazio sob o FOV), **4 paredes** limite, **16 árvores** (tronco + copa), **6 plataformas** decorativas e **skybox** (cubo 400u invertido com `setLightOff`).
 
 ### `hud.py`
-Usa `OnscreenText` e `DirectFrame` do Panda3D para exibir pontuação, contagem de itens, cronômetro e tela de vitória.
+`OnscreenText` para pontuação, contagem de itens e cronômetro. `DirectButton` na tela de vitória para "Jogar Novamente" e "Menu Principal". Método `destroy()` remove todos os nós da cena ao encerrar a partida.
